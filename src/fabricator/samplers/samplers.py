@@ -112,10 +112,7 @@ def _alternate_classes(dataset: Dataset, column: str) -> Dataset:
         if not targets:
             break
 
-    # Create new dataset from the alternate indices
-    alternate_dataset = dataset.select(alternate_indices)
-
-    return alternate_dataset
+    return dataset.select(alternate_indices)
 
 
 def single_label_stratified_sample(
@@ -188,11 +185,7 @@ def ml_mc_sampler(dataset: Dataset, labels_column: str, num_examples: int) -> Da
     # Because of random sampling we do not ensure, that we ever sampled all examples
     # Nor do we know if all labels are present. We therefore use a max try counter
     # So we dont get stuck in infinite while loop
-    if num_examples == -1:
-        max_tries = 2 * len(dataset)
-    else:
-        max_tries = -1
-
+    max_tries = 2 * len(dataset) if num_examples == -1 else -1
     tries = 0
 
     pbar = tqdm(total=num_examples, desc="Sampling")

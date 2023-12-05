@@ -246,7 +246,10 @@ class DatasetGenerator:
                     generated_dataset[key].append(value)
 
                 # Try to safely convert the prediction to the type of the target variable
-                if not prompt_template.generate_data_for_column[0] in unlabeled_example:
+                if (
+                    prompt_template.generate_data_for_column[0]
+                    not in unlabeled_example
+                ):
                     prediction = self._convert_prediction(
                         prediction, type(prompt_template.generate_data_for_column[0])
                     )
@@ -324,13 +327,7 @@ class DatasetGenerator:
         fewshot_sampling_column: str
     ) -> Tuple[Union[List[str], str], Dataset]:
 
-        if fewshot_sampling_strategy == "uniform":
-            prompt_labels = choice(prompt_template.label_options, 1)[0]
-            fewshot_examples = fewshot_dataset.filter(
-                lambda example: example[fewshot_sampling_column] == prompt_labels
-            ).shuffle().select(range(fewshot_examples_per_class))
-
-        elif fewshot_sampling_strategy == "stratified":
+        if fewshot_sampling_strategy == "stratified":
             prompt_labels = prompt_template.label_options
             fewshot_examples = single_label_stratified_sample(
                 fewshot_dataset,
@@ -338,16 +335,22 @@ class DatasetGenerator:
                 fewshot_examples_per_class
             )
 
+        elif fewshot_sampling_strategy == "uniform":
+            prompt_labels = choice(prompt_template.label_options, 1)[0]
+            fewshot_examples = fewshot_dataset.filter(
+                lambda example: example[fewshot_sampling_column] == prompt_labels
+            ).shuffle().select(range(fewshot_examples_per_class))
+
         else:
             prompt_labels = prompt_template.label_options if prompt_template.label_options else None
-            if fewshot_examples_per_class:
-                fewshot_examples = fewshot_dataset.shuffle().select(range(fewshot_examples_per_class))
-            else:
-                fewshot_examples = fewshot_dataset.shuffle()
-
+            fewshot_examples = (
+                fewshot_dataset.shuffle().select(range(fewshot_examples_per_class))
+                if fewshot_examples_per_class
+                else fewshot_dataset.shuffle()
+            )
         assert len(fewshot_examples) > 0, f"Could not find any fewshot examples for label(s) {prompt_labels}." \
-                                          f"Ensure that labels of fewshot examples match the label_options " \
-                                          f"from the prompt."
+                                              f"Ensure that labels of fewshot examples match the label_options " \
+                                              f"from the prompt."
 
         return prompt_labels, fewshot_examples
 
