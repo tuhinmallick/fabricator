@@ -14,10 +14,7 @@ def preprocess_squad_format(dataset: Dataset) -> Dataset:
     """
 
     def preprocess(example):
-        if example["answers"]:
-            example["answers"] = example["answers"].pop()
-        else:
-            example["answers"] = ""
+        example["answers"] = example["answers"].pop() if example["answers"] else ""
         return example
 
     dataset = dataset.flatten().rename_column("answers.text", "answers").map(preprocess)

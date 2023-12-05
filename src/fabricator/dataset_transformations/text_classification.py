@@ -48,16 +48,14 @@ def replace_class_labels(id2label: Union[Dict[str, str], Dict[int, str]], expand
     if not all(isinstance(v, str) for v in expanded_labels.values()):
         raise ValueError("Values of expanded_labels must be strings.")
 
-    if type_keys == "str":
-        replaced_id2label = {}
-        for idx, tag in id2label.items():
-            if tag in expanded_labels:
-                replaced_id2label[idx] = expanded_labels[tag]
-            else:
-                replaced_id2label[idx] = tag
-    else:
-        replaced_id2label = expanded_labels
-    return replaced_id2label
+    return (
+        {
+            idx: expanded_labels[tag] if tag in expanded_labels else tag
+            for idx, tag in id2label.items()
+        }
+        if type_keys == "str"
+        else expanded_labels
+    )
 
 
 def convert_label_ids_to_texts(
@@ -100,7 +98,4 @@ def convert_label_ids_to_texts(
         .rename_column(new_label_column, label_column)
     )
 
-    if return_label_options:
-        return dataset, label_options
-
-    return dataset
+    return (dataset, label_options) if return_label_options else dataset

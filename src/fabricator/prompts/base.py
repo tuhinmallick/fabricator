@@ -109,10 +109,10 @@ class BasePrompt:
                 [f"{self.generate_data_for_column[0]}: "]
             )
 
-        elif self.generate_data_for_column and not self.fewshot_example_columns:
+        elif self.generate_data_for_column:
             target_template = f"{self.generate_data_for_column[0]}: "
 
-        elif not self.generate_data_for_column and not self.fewshot_example_columns:
+        elif not self.fewshot_example_columns:
             target_template = f"{self.DEFAULT_TEXT_COLUMN[0]}: "
 
         else:
@@ -127,20 +127,18 @@ class BasePrompt:
         Returns:
             str: Prompt text
         """
-        label = None
         fewshot_examples = None
 
-        if self.label_options:
-            label = "EXAMPLE LABEL"
-
+        label = "EXAMPLE LABEL" if self.label_options else None
         if self.relevant_columns_for_fewshot_examples:
-            fewshot_examples = {}
-            for column in self.relevant_columns_for_fewshot_examples:
-                fewshot_examples[column] = [f"EXAMPLE TEXT FOR COLUMN {column}"]
+            fewshot_examples = {
+                column: [f"EXAMPLE TEXT FOR COLUMN {column}"]
+                for column in self.relevant_columns_for_fewshot_examples
+            }
             fewshot_examples = Dataset.from_dict(fewshot_examples)
 
         return "\nThe prompt to the LLM will be like:\n" + 10*"-" + "\n"\
-            + self.get_prompt_text(label, fewshot_examples) + "\n" + 10*"-"
+                + self.get_prompt_text(label, fewshot_examples) + "\n" + 10*"-"
 
     @staticmethod
     def filter_example_by_columns(example: Dict[str, str], columns: List[str]) -> Dict[str, str]:
@@ -153,8 +151,7 @@ class BasePrompt:
         Returns:
             Dict[str, str]: Filtered example
         """
-        filtered_example = {key: value for key, value in example.items() if key in columns}
-        return filtered_example
+        return {key: value for key, value in example.items() if key in columns}
 
     def filter_examples_by_columns(self, dataset: Dataset, columns: List[str]) -> List[Dict[str, str]]:
         """Filter examples by columns.
@@ -166,10 +163,9 @@ class BasePrompt:
         Returns:
             List[Dict[str, str]]: Filtered examples
         """
-        filtered_inputs = []
-        for example in dataset:
-            filtered_inputs.append(self.filter_example_by_columns(example, columns))
-        return filtered_inputs
+        return [
+            self.filter_example_by_columns(example, columns) for example in dataset
+        ]
 
     def get_prompt_text(self, labels: Union[str, List[str]] = None, examples: Optional[Dataset] = None) -> str:
         """Get prompt text for the given examples.
@@ -192,11 +188,12 @@ class BasePrompt:
         if examples:
             examples = self.filter_examples_by_columns(examples, self.relevant_columns_for_fewshot_examples)
             formatted_examples = [self.fewshot_prompt.format(**example) for example in examples]
-            prompt_text = self.fewshot_example_separator.join(
-                [task_description] + formatted_examples + [self.target_formatting_template]
+            return self.fewshot_example_separator.join(
+                [task_description]
+                + formatted_examples
+                + [self.target_formatting_template]
             )
         else:
-            prompt_text = self.fewshot_example_separator.join(
+            return self.fewshot_example_separator.join(
                 [task_description] + [self.target_formatting_template]
             )
-        return prompt_text

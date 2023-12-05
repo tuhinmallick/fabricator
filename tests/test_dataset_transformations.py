@@ -93,9 +93,9 @@ class TestTransformationsTokenClassification(unittest.TestCase):
         self.assertEqual(len(label_options), 4)
         self.assertEqual(type(dataset[0]["ner_tags"]), str)
         self.assertNotEqual(type(dataset[0]["ner_tags"]), int)
-        spans = [span for span in dataset[0]["ner_tags"].split("\n")]
+        spans = list(dataset[0]["ner_tags"].split("\n"))
         for span in spans:
-            self.assertTrue(any([label in span for label in label_options]))
+            self.assertTrue(any(label in span for label in label_options))
 
     def test_formatting_with_span_labels(self):
         """Test formatting with span labels"""

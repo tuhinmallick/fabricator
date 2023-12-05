@@ -29,7 +29,9 @@ def convert_token_labels_to_spans(
         Tuple[Dataset, List[str]]: huggingface Dataset with span labels and list of possible labels for the prompt
     """
     if expanded_label_mapping:
-        if not len(expanded_label_mapping) == len(dataset.features[label_column].feature.names):
+        if len(expanded_label_mapping) != len(
+            dataset.features[label_column].feature.names
+        ):
             raise ValueError(
                 f"Length of expanded label mapping and original number of labels in dataset do not match.\n"
                 f"Original labels: {dataset.features[label_column].feature.names}"
@@ -63,7 +65,7 @@ def convert_token_labels_to_spans(
                 current_entity_type = span_annotation
                 continue
             if current_entity_type == span_annotation:
-                current_entity += " " + example[token_column][idx]
+                current_entity += f" {example[token_column][idx]}"
             else:
                 annotations_for_prompt += SPAN_ANNOTATION_TEMPLATE.format(entity=current_entity,
                                                                           label=current_entity_type) + "\n"
@@ -132,8 +134,12 @@ def convert_spans_to_token_labels(
                 matched_label = matches.group(2)
 
                 span_tokens = matched_entity.split(" ")
-                span_labels = ["B-" + matched_label if idx == 0 else "B-" + matched_label.lower()
-                               for idx, _ in enumerate(span_tokens)]
+                span_labels = [
+                    f"B-{matched_label}"
+                    if idx == 0
+                    else f"B-{matched_label.lower()}"
+                    for idx, _ in enumerate(span_tokens)
+                ]
 
                 for token, label in zip(span_tokens, span_labels):
                     label_id = lower_label2id.get(label.lower())
@@ -141,9 +147,6 @@ def convert_spans_to_token_labels(
                         logger.info(f"Entity {token} with label {label} is not in id2label: {id2label}.")
                     else:
                         ner_tag_tuples.append((token, label_id))
-            else:
-                pass
-
         if ner_tag_tuples:
             lower_tokens = example[token_column].lower().split(" ")
             # initialize all tokens with O type
